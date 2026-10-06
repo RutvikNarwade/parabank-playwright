@@ -40,9 +40,9 @@ These were real mistakes made during the session, caught by running the code or 
 8. **Guessed locators and messages** (e.g. the activity page's `#accountType` and the bill-payment transaction description) were not trusted until the tests using them passed against the live site.
 
 ## What I modified or validated myself
-<!-- Candidate: replace this list with what you personally reviewed, changed or re-ran. Be specific; you'll be asked about it. -->
-- [ ] Read through every file in `src/` and `tests/` and can explain the fixture chain (`customer` → `loggedInPage` → page objects) and the POST throttle.
-- [ ] Re-ran `npm test` locally and checked the HTML report.
-- [ ] Reproduced at least the critical defects (BUG-001, 002, 003, 005) by hand.
-- [ ] Reviewed the CI run, its job summary and artifacts on GitHub.
-- [ ] Changes I made: …
+- [x] Ran `npm run test:smoke` locally from VS Code (7/7 passed).
+- [x] Walked through the code and can explain the fixture chain (`customer` → `loggedInPage` → page objects) and the POST throttle.
+- [x] Stepped through tests in Playwright UI mode (`npx playwright test --ui`) and checked the HTML report.
+- [x] Reproduced BUG-001 by hand: opened a customer's data in a private window with no login.
+- [x] Reviewed the CI run, its job summary and artifacts on GitHub.
+- Changes I made: none to the code. I reviewed, ran and validated it as listed above.
