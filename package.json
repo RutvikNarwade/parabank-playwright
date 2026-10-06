@@ -1,0 +1,36 @@
+{
+  "name": "parabank-playwright",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Risk-based UI + API test automation for the ParaBank demo application (Playwright + TypeScript)",
+  "scripts": {
+    "test": "playwright test --project=api --project=chromium",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --project=chromium",
+    "test:smoke": "playwright test --project=api --project=chromium --grep @smoke",
+    "test:regression": "playwright test --project=api --project=chromium --grep @defect",
+    "test:network": "playwright test --project=chromium --grep @network",
+    "test:a11y": "playwright test --project=chromium --grep @a11y",
+    "test:security": "playwright test --project=api --grep @security",
+    "test:cross-browser": "playwright test --project=firefox --project=webkit",
+    "test:headed": "playwright test --project=chromium --headed --workers=1",
+    "report": "playwright show-report",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.4",
+    "dotenv": "^18.0.5",
+    "eslint": "^10.12.0",
+    "eslint-plugin-playwright": "^2.12.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "zod": "^4.6.5"
+  }
+}

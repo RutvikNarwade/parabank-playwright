@@ -1,0 +1,141 @@
+name: Playwright tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Nightly: the shared ParaBank instance changes and is reset without notice.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: 'Only run tests whose title or tag matches (e.g. @smoke, @defect, BUG-005)'
+        required: false
+        default: ''
+      cross_browser:
+        description: 'Also run @smoke on Firefox and WebKit'
+        type: boolean
+        default: false
+
+# One run per branch at a time. The target is a shared, rate-limited public environment.
+concurrency:
+  group: playwright-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: 'true'
+  WORKERS: '2'
+  GREP: ${{ github.event.inputs.grep }}
+
+jobs:
+  static-checks:
+    name: Lint & typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+
+  api:
+    name: API tests
+    needs: static-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run API tests
+        run: npx playwright test --project=api ${GREP:+--grep "$GREP"}
+      - name: Job summary
+        if: always()
+        run: node scripts/ci-summary.mjs reports/results.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-report
+          path: |
+            playwright-report/
+            reports/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: api-failure-traces
+          path: test-results/
+          retention-days: 14
+
+  ui:
+    name: UI, network & accessibility tests (Chromium)
+    needs: static-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run browser tests
+        run: npx playwright test --project=chromium ${GREP:+--grep "$GREP"}
+      - name: Job summary
+        if: always()
+        run: node scripts/ci-summary.mjs reports/results.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-report
+          path: |
+            playwright-report/
+            reports/
+          retention-days: 14
+      - name: Upload traces, screenshots and videos of failures
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ui-failure-traces
+          path: test-results/
+          retention-days: 14
+
+  cross-browser:
+    name: Smoke on Firefox & WebKit
+    needs: ui
+    if: github.event_name == 'schedule' || github.event.inputs.cross_browser == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps firefox webkit
+      - run: npx playwright test --project=firefox --project=webkit
+      - name: Job summary
+        if: always()
+        run: node scripts/ci-summary.mjs reports/results.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-browser-report
+          path: |
+            playwright-report/
+            reports/
+            test-results/
+          retention-days: 14
